@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 
+from phonenumber_field.modelfields import PhoneNumberField
+
 
 class Restaurant(models.Model):
     name = models.CharField(
@@ -30,8 +32,8 @@ class ProductQuerySet(models.QuerySet):
     def available(self):
         products = (
             RestaurantMenuItem.objects
-            .filter(availability=True)
-            .values_list('product')
+                .filter(availability=True)
+                .values_list('product')
         )
         return self.filter(pk__in=products)
 
@@ -79,7 +81,7 @@ class Product(models.Model):
     )
     description = models.TextField(
         'описание',
-        max_length=200,
+        max_length=500,
         blank=True,
     )
 
@@ -121,3 +123,42 @@ class RestaurantMenuItem(models.Model):
 
     def __str__(self):
         return f"{self.restaurant.name} - {self.product.name}"
+
+
+class Order(models.Model):
+    """Модель заказа."""
+    address = models.CharField('Адрес', max_length=300)
+    firstname = models.CharField('Имя покупателя', max_length=100)
+    lastname = models.CharField('Фамилия покупателя', max_length=100, db_index=True)
+    phone_number = PhoneNumberField('Номер телефона', db_index=True)
+
+    class Meta:
+        verbose_name = 'Заказ'
+        verbose_name_plural = 'Заказы'
+
+    def __str__(self):
+        return f'{self.firstname} {self.lastname} {self.address}'
+
+
+class OrderItem(models.Model):
+    """Модель продукта в заказе."""
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='orders',
+        verbose_name='Заказ', )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.DO_NOTHING,
+        related_name='items',
+        verbose_name='Продукты в заказе',
+    )
+    quantity = models.IntegerField('Количество', validators=[MinValueValidator(1)])
+
+    class Meta:
+        verbose_name = 'Продукт в заказе'
+        verbose_name_plural = 'Продукты в заказе'
+        ordering = ('product',)
+
+    def __str__(self):
+        return f'{self.product}: {self.order}'

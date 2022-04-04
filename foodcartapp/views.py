@@ -2,6 +2,8 @@ import json
 
 from django.http import JsonResponse
 from django.templatetags.static import static
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 from .models import Product, Order, OrderItem
 
@@ -58,32 +60,26 @@ def product_list_api(request):
     })
 
 
+@api_view(['POST'])
+# @permission_classes([AllowAny, ])
 def register_order(request):
-    response = request.body
+    order_details = request.data
 
-    # mock_order = {"products": [{"product": 4, "quantity": 1}, {"product": 2, "quantity": 2}],
-    #               "firstname": "Aleksey",
-    #               "lastname": "Koshkin",
-    #               "phonenumber": "89857243204",
-    #               "address": "Москва, Цветной бульвар, 11с2"
-    #               }
+    order = Order.objects.create(
+        firstname=order_details['firstname'],
+        lastname=order_details['lastname'],
+        phone_number=order_details['phonenumber'],
+        address=order_details['address']
+    )
 
-    if request.method == 'POST':
-        order_details = json.loads(request.body)
-
-        order = Order.objects.create(
-            firstname=order_details['firstname'],
-            lastname=order_details['lastname'],
-            phone_number=order_details['phonenumber'],
-            address=order_details['address']
+    order_items = order_details.get('products')
+    for item in order_items:
+        OrderItem.objects.create(
+            order=order,
+            product=Product.objects.get(id=item['product']),
+            quantity=item.get('quantity')
         )
 
-        order_items = order_details.get('products')
-        for item in order_items:
-            OrderItem.objects.create(
-                order=order,
-                product=Product.objects.get(id=item['product']),
-                quantity=item.get('quantity')
-            )
+    return JsonResponse({})
 
-        return JsonResponse({})
+

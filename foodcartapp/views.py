@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from phonenumbers import is_valid_number, parse
 
 from .models import Product, Order, OrderItem
+from .serializers import OrderSerializer
 
 
 def banners_list_api(request):
@@ -66,62 +67,22 @@ def product_list_api(request):
 @api_view(['POST'])
 @permission_classes([AllowAny, ])
 def register_order(request):
-    order_details = request.data
-    order_products = order_details.get('products', '')
-    firstname = order_details.get('firstname')
-    lastname = order_details.get('lastname')
-    phone_number = order_details.get('phonenumber')
-    address = order_details.get('address')
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    if isinstance(order_products, str):
-        return Response({'products': 'Ожидался list со значениями, но был получен "str"'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if order_products is None:
-        return Response({'products': 'Это поле не может быть пустым.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if order_products == []:
-        return Response({'products': 'Этот список не может быть пустым.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if order_products == '':
-        return Response({'products': 'Обязательное поле.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if not phone_number:
-        return Response({'phone_number': 'Это поле не может быть пустым.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if firstname is None:
-        return Response({'firstname': 'Это поле не может быть пустым.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if not isinstance(firstname, str):
-        return Response({'firstname': 'Это поле должно быть строкой.'},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if not is_valid_number(parse(phone_number, 'RU')):
-        return Response({'phonenumber': 'Введен некорректный номер телефона.'},
-                        status=status.HTTP_400_BAD_REQUEST)
+    # if not is_valid_number(parse(phone_number, 'RU')):
+    #     return Response({'phonenumber': 'Введен некорректный номер телефона.'},
+    #                     status=status.HTTP_400_BAD_REQUEST)
 
     order = Order.objects.create(
-        firstname=firstname,
-        lastname=lastname,
-        phone_number=phone_number,
-        address=address,
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
     )
 
-    for product in order_products:
-        try:
-            order_product = Product.objects.get(id=product['product'])
-        except Product.DoesNotExist:
-            return Response({'products': f'Недопустимый первичный ключ {product["product"]}'})
-
-        OrderItem.objects.create(
-            order=order,
-            product=order_product,
-            quantity=product.get('quantity')
-        )
+    products_fields = serializer.validated_data['products']
+    products = [OrderItem(order=order, **fields) for fields in products_fields]
+    OrderItem.objects.bulk_create(products)
 
     return JsonResponse({})

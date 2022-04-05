@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
+from rest_framework import status
+from rest_framework.response import Response
 
 from .models import Product, Order, OrderItem
 
@@ -61,9 +63,27 @@ def product_list_api(request):
 
 
 @api_view(['POST'])
-# @permission_classes([AllowAny, ])
+@permission_classes([AllowAny, ])
 def register_order(request):
+
     order_details = request.data
+    order_products = order_details.get('products', '')
+
+    if isinstance(order_products, str):
+        return Response({'products': 'Ожидался list со значениями, но был получен "str"'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if order_products is None:
+        return Response({'products': 'Это поле не может быть пустым.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if order_products == []:
+        return Response({'products': 'Этот список не может быть пустым.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if order_products == '':
+        return Response({'products': ' Обязательное поле.'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
     order = Order.objects.create(
         firstname=order_details['firstname'],
@@ -72,14 +92,12 @@ def register_order(request):
         address=order_details['address']
     )
 
-    order_items = order_details.get('products')
-    for item in order_items:
+    for product in order_products:
         OrderItem.objects.create(
             order=order,
-            product=Product.objects.get(id=item['product']),
-            quantity=item.get('quantity')
+            product=Product.objects.get(id=product['product']),
+            quantity=product.get('quantity')
         )
 
     return JsonResponse({})
-
 

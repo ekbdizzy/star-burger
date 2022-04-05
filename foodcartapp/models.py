@@ -130,7 +130,7 @@ class Order(models.Model):
     address = models.CharField('Адрес', max_length=300)
     firstname = models.CharField('Имя покупателя', max_length=100)
     lastname = models.CharField('Фамилия покупателя', max_length=100, db_index=True)
-    phone_number = PhoneNumberField('Номер телефона', db_index=True)
+    phonenumber = PhoneNumberField('Номер телефона', db_index=True)
 
     class Meta:
         verbose_name = 'Заказ'

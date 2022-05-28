@@ -3,6 +3,7 @@ import os
 import dj_database_url
 
 from environs import Env
+from django.db.models import CharField
 
 
 env = Env()
@@ -28,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'django_extensions',
     'debug_toolbar',
     'phonenumber_field',
 ]
@@ -119,7 +121,6 @@ STATIC_URL = '/static/'
 INTERNAL_IPS = [
     '127.0.0.1'
 ]
-
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "assets"),

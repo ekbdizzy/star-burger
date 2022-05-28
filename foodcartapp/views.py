@@ -1,15 +1,12 @@
-import json
-
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
-from phonenumbers import is_valid_number, parse
 
 from .models import Product, Order, OrderItem
-from .serializers import OrderSerializer
+from .serializers import OrderSerializer, OrderItemSerializer
 
 
 def banners_list_api(request):
@@ -70,10 +67,6 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    # if not is_valid_number(parse(phone_number, 'RU')):
-    #     return Response({'phonenumber': 'Введен некорректный номер телефона.'},
-    #                     status=status.HTTP_400_BAD_REQUEST)
-
     order = Order.objects.create(
         firstname=serializer.validated_data['firstname'],
         lastname=serializer.validated_data['lastname'],
@@ -85,4 +78,16 @@ def register_order(request):
     products = [OrderItem(order=order, **fields) for fields in products_fields]
     OrderItem.objects.bulk_create(products)
 
-    return JsonResponse({})
+    serializer = OrderSerializer(order)
+    products = order.products.all()
+    products_serializer = OrderItemSerializer(products, many=True)
+    serializer.products = products_serializer
+
+    mock_request = {
+        "products": [{"product": 1, "quantity": 1}],
+        "firstname": "Aleshka",
+        "lastname": "Петров",
+        "phonenumber": "+79291000000",
+        "address": "Москва"
+    }
+    return Response(serializer.data, status=status.HTTP_201_CREATED)

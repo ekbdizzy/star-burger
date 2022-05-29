@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view, permission_classes
@@ -63,6 +64,7 @@ def product_list_api(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny, ])
+@transaction.atomic
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -84,7 +86,6 @@ def register_order(request):
     products = order.products.all()
     products_serializer = OrderItemSerializer(products, many=True)
     serializer.products = products_serializer
-
     mock_request = {
         "products": [{"product": 1, "quantity": 1}],
         "firstname": "Aleshka",

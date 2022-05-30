@@ -42,7 +42,7 @@ class ProductQuerySet(models.QuerySet):
 class ProductCategory(models.Model):
     name = models.CharField(
         'название',
-        max_length=50
+        max_length=50,
     )
 
     class Meta:
@@ -56,7 +56,7 @@ class ProductCategory(models.Model):
 class Product(models.Model):
     name = models.CharField(
         'название',
-        max_length=50
+        max_length=50,
     )
     category = models.ForeignKey(
         ProductCategory,
@@ -70,7 +70,7 @@ class Product(models.Model):
         'цена',
         max_digits=8,
         decimal_places=2,
-        validators=[MinValueValidator(0)]
+        validators=[MinValueValidator(0)],
     )
     image = models.ImageField(
         'картинка'
@@ -145,6 +145,11 @@ class Order(models.Model):
         ('Отменен', 'Отменен'),
     )
 
+    PAYMENT_CHOICES = (
+        ("cash", "наличными"),
+        ("online", "электронно"),
+    )
+
     address = models.CharField('Адрес', max_length=300)
     firstname = models.CharField('Имя покупателя', max_length=100)
     lastname = models.CharField('Фамилия покупателя', max_length=100, db_index=True)
@@ -155,6 +160,12 @@ class Order(models.Model):
         choices=STATUS_CHOICES,
         db_index=True,
         default='Необработан',
+    )
+    payment_type = models.CharField(
+        'Способ оплаты',
+        choices=PAYMENT_CHOICES,
+        max_length=10,
+        db_index=True,
     )
     comment = models.TextField('Комментарий', max_length=500, blank=True)
     registered_at = models.DateTimeField('Когда создан', auto_now_add=True, db_index=True)

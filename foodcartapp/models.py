@@ -157,6 +157,9 @@ class Order(models.Model):
         default='Необработан',
     )
     comment = models.TextField('Комментарий', max_length=500, blank=True)
+    registered_at = models.DateTimeField('Когда создан', auto_now_add=True, db_index=True)
+    called_at = models.DateTimeField('Когда подтвержден', db_index=True, blank=True, null=True)
+    delivered_at = models.DateTimeField('Когда доставлен', db_index=True, blank=True, null=True)
 
     objects = OrderQueryset.as_manager()
 

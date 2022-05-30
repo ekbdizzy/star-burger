@@ -118,6 +118,20 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline, ]
 
+    fields = (
+        "address",
+        "firstname",
+        "lastname",
+        "phonenumber",
+        "status",
+        "comment",
+        "registered_at",
+        "called_at",
+        "delivered_at",
+    )
+
+    readonly_fields = ("registered_at",)
+
     def response_post_save_change(self, request, obj):
         response = super().response_post_save_change(request, obj)
         next_url = request.GET.get('next', '')

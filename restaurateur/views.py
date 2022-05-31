@@ -1,5 +1,4 @@
 from django import forms
-from django.db.models import Sum, F
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -97,7 +96,7 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    excluded_statuses = ['Завершен', 'Отменен']
+    excluded_statuses = ["COMPLETED", "CANCELLED"]
     orders = Order.objects.exclude(status__in=excluded_statuses).get_order_price()
     return render(request, template_name='order_items.html', context={
         "orders": orders

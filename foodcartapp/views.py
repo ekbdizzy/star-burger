@@ -69,11 +69,11 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    validated_data = serializer.validated_data
     order = Order.objects.create(
-        firstname=serializer.validated_data['firstname'],
-        lastname=serializer.validated_data['lastname'],
-        phonenumber=serializer.validated_data['phonenumber'],
-        address=serializer.validated_data['address'],
+        **{key: value for key, value
+           in validated_data.items()
+           if key != 'products'}
     )
 
     serialized_products = serializer.validated_data['products']
@@ -86,11 +86,4 @@ def register_order(request):
     products = order.products.all()
     products_serializer = OrderItemSerializer(products, many=True)
     serializer.products = products_serializer
-    mock_request = {
-        "products": [{"product": 1, "quantity": 1}],
-        "firstname": "Aleshka",
-        "lastname": "Петров",
-        "phonenumber": "+79291000000",
-        "address": "Москва"
-    }
     return Response(serializer.data, status=status.HTTP_201_CREATED)

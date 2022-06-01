@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseRedirect
@@ -6,6 +8,7 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from restaurateur.views import filter_restaurants_by_products
 from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
@@ -125,6 +128,7 @@ class OrderAdmin(admin.ModelAdmin):
         "phonenumber",
         "status",
         "payment_type",
+        'restaurant',
         "comment",
         "registered_at",
         "called_at",
@@ -132,6 +136,28 @@ class OrderAdmin(admin.ModelAdmin):
     )
 
     readonly_fields = ("registered_at",)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Filter restaurants where food can be cooked."""
+        order_qs = (Order.objects
+                    .filter(pk=request.resolver_match.kwargs['object_id'])
+                    .prefetch_related('products')
+                    )
+        order_items = OrderItem.objects.get_orders_items(order_qs)
+        menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
+        restaurants = defaultdict(set)
+        for menu_item in menu_items:
+            restaurant, product_id = menu_item.values()
+            restaurants[restaurant].add(product_id)
+
+        order = order_qs.first()
+        order.product_ids = {product.product_id for product in order.products.all()}
+        order.restaurants = filter_restaurants_by_products(restaurants, order.product_ids)
+        restaurants = Restaurant.objects.filter(name__in=order.restaurants).values_list('id')
+
+        if db_field.name == "restaurant":
+            kwargs["queryset"] = Restaurant.objects.filter(id__in=restaurants)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def response_post_save_change(self, request, obj):
         response = super().response_post_save_change(request, obj)

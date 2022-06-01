@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django import forms
 from django.shortcuts import redirect, render
 from django.views import View
@@ -7,7 +9,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, OrderItem, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -94,10 +96,40 @@ def view_restaurants(request):
     })
 
 
+def filter_restaurants_by_products(
+    restaurants: dict[str, set],
+    products: set[int]
+) -> list[str]:
+    """Return list of restaurants names where products can be cooked."""
+    order_rests = []
+    for restaurant, rest_products in restaurants.items():
+        if products.issubset(rest_products):
+            order_rests.append(restaurant)
+    return order_rests
+
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     excluded_statuses = ["COMPLETED", "CANCELLED"]
-    orders = Order.objects.exclude(status__in=excluded_statuses).get_order_price()
+    orders = (Order.objects
+              .prefetch_related('products')
+              .exclude(status__in=excluded_statuses)
+              .get_order_price())
+    order_items = OrderItem.objects.get_orders_items(orders)
+    menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
+
+    restaurants = defaultdict(set)
+    for menu_item in menu_items:
+        restaurant, product_id = menu_item.values()
+        restaurants[restaurant].add(product_id)
+
+    for order in orders:
+        order.product_ids = {product.product_id for product in order.products.all()}
+        order.restaurants = filter_restaurants_by_products(
+            restaurants, order.product_ids
+        )
+
     return render(request, template_name='order_items.html', context={
         "orders": orders
     })
+

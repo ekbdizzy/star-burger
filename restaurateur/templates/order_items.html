@@ -38,7 +38,9 @@
         <td>
           <details open>
             <summary>Рестораны</summary>
-{#            <p>{{ order.products.all }}</p>#}
+            {% for restaurant in order.restaurants %}
+              <p>{{ restaurant }}</p>
+            {% endfor %}
           </details>
         </td>
         <td>

@@ -96,6 +96,15 @@ class Product(models.Model):
         return self.name
 
 
+class RestaurantMenuItemQuerySet(models.QuerySet):
+    def get_matched_with_order_items(self, order_items: dict):
+        return (self
+                .select_related('restaurant', 'product')
+                .filter(availability=True, product_id__in=order_items)
+                .values('restaurant__name', 'product_id')
+                )
+
+
 class RestaurantMenuItem(models.Model):
     restaurant = models.ForeignKey(
         Restaurant,
@@ -114,6 +123,8 @@ class RestaurantMenuItem(models.Model):
         default=True,
         db_index=True
     )
+
+    objects = RestaurantMenuItemQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'пункт меню ресторана'
@@ -182,6 +193,12 @@ class Order(models.Model):
         return f'{self.firstname} {self.lastname} {self.address}'
 
 
+class OrderItemQuerySet(models.QuerySet):
+
+    def get_orders_items(self, orders: OrderQueryset):
+        return self.filter(order__in=orders).distinct().values_list('product_id')
+
+
 class OrderItem(models.Model):
     """Модель продукта в заказе."""
     order = models.ForeignKey(
@@ -202,6 +219,8 @@ class OrderItem(models.Model):
         validators=[MinValueValidator(1)]
     )
     quantity = models.IntegerField('Количество', validators=[MinValueValidator(1)])
+
+    objects = OrderItemQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Продукт в заказе'

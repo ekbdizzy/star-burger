@@ -139,8 +139,13 @@ class OrderAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter restaurants where food can be cooked."""
+
+        obj_id = request.resolver_match.kwargs.get('object_id', None)
+        if obj_id is None:
+            return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
         order_qs = (Order.objects
-                    .filter(pk=request.resolver_match.kwargs['object_id'])
+                    .filter(pk=obj_id)
                     .prefetch_related('products')
                     )
         order_items = OrderItem.objects.get_orders_items(order_qs)
@@ -158,6 +163,11 @@ class OrderAdmin(admin.ModelAdmin):
         if db_field.name == "restaurant":
             kwargs["queryset"] = Restaurant.objects.filter(id__in=restaurants)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        if obj.status in ['1', '2'] and obj.restaurant:
+            obj.status = '3'
+        super().save_model(request, obj, form, change)
 
     def response_post_save_change(self, request, obj):
         response = super().response_post_save_change(request, obj)

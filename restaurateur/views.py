@@ -110,11 +110,13 @@ def filter_restaurants_by_products(
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    excluded_statuses = ["COMPLETED", "CANCELLED"]
+    excluded_statuses = ["5", "6"]
     orders = (Order.objects
               .prefetch_related('products')
               .exclude(status__in=excluded_statuses)
-              .get_order_price())
+              .get_order_price()
+              .order_by('status')
+              )
     order_items = OrderItem.objects.get_orders_items(orders)
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
 

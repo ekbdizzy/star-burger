@@ -147,13 +147,20 @@ class OrderQueryset(models.QuerySet):
 class Order(models.Model):
     """Модель заказа."""
 
+    NEW = '1'
+    APPROVED = '2'
+    COOKING = '3'
+    DELIVERING = '4'
+    COMPLETED = '5'
+    CANCELLED = '6'
+
     STATUS_CHOICES = (
-        ('NEW', 'Необработан'),
-        ('APPROVED', 'Подтвержден'),
-        ('COOKING', 'Готовится'),
-        ('DELIVERING', 'Доставляется'),
-        ('COMPLETED', 'Завершен'),
-        ('CANCELLED', 'Отменен'),
+        (NEW, 'Необработан'),
+        (APPROVED, 'Подтвержден'),
+        (COOKING, 'Готовится'),
+        (DELIVERING, 'Доставляется'),
+        (COMPLETED, 'Завершен'),
+        (CANCELLED, 'Отменен'),
     )
 
     PAYMENT_CHOICES = (

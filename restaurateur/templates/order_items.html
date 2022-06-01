@@ -39,6 +39,8 @@
           {% if order.restaurant %}
               <p>Готовит:<br>
                 {{ order.restaurant }}</p>
+          {% elif order.restaurants is None %}
+            <p>Ошибка определения координат</p>
           {% else %}
             <details>
             <summary>Может быть приготовлен ресторанами:</summary>

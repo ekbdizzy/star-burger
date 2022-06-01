@@ -1,6 +1,8 @@
 from collections import defaultdict
+from operator import itemgetter
 
 from django import forms
+from django.conf import settings
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -9,7 +11,10 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
+from geopy import distance
+
 from foodcartapp.models import Product, Restaurant, Order, OrderItem, RestaurantMenuItem
+from foodcartapp.services import fetch_coordinates
 
 
 class Login(forms.Form):
@@ -72,7 +77,6 @@ def view_products(request):
     default_availability = {restaurant.id: False for restaurant in restaurants}
     products_with_restaurants = []
     for product in products:
-
         availability = {
             **default_availability,
             **{item.restaurant_id: item.availability for item in product.menu_items.all()},
@@ -96,16 +100,36 @@ def view_restaurants(request):
     })
 
 
+def get_restaurants(menu_items: list):
+    """Return list with tuple(name, address) in key and set of product_ids in value."""
+    restaurants = defaultdict(set)
+    for menu_item in menu_items:
+        restaurant_name, address, product_id = menu_item.values()
+        restaurants[(restaurant_name, address)].add(product_id)
+    return restaurants
+
+
 def filter_restaurants_by_products(
-    restaurants: dict[str, set],
+    restaurants: dict[tuple, set],
     products: set[int]
-) -> list[str]:
-    """Return list of restaurants names where products can be cooked."""
+) -> list[tuple]:
+    """Return list of restaurants where products can be cooked."""
     order_rests = []
     for restaurant, rest_products in restaurants.items():
         if products.issubset(rest_products):
             order_rests.append(restaurant)
     return order_rests
+
+
+def add_distance_to_order(order_address: str, restaurants: list[tuple]) -> list[tuple]:
+    restaurants_with_distance = []
+    for name, address in restaurants:
+        rest_coords = fetch_coordinates(settings.YANDEX_API_KEY, address)
+        order_coords = fetch_coordinates(settings.YANDEX_API_KEY, order_address)
+        if rest_coords:
+            restaurants_with_distance.append(
+                (name, round(distance.distance(rest_coords, order_coords).km, 2)))
+    return sorted(restaurants_with_distance, key=itemgetter(1))
 
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
@@ -119,19 +143,14 @@ def view_orders(request):
               )
     order_items = OrderItem.objects.get_orders_items(orders)
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
-
-    restaurants = defaultdict(set)
-    for menu_item in menu_items:
-        restaurant, product_id = menu_item.values()
-        restaurants[restaurant].add(product_id)
-
+    restaurants = get_restaurants(menu_items)
     for order in orders:
         order.product_ids = {product.product_id for product in order.products.all()}
         order.restaurants = filter_restaurants_by_products(
             restaurants, order.product_ids
         )
+        order.restaurants = add_distance_to_order(order.address, order.restaurants)
 
     return render(request, template_name='order_items.html', context={
         "orders": orders
     })
-

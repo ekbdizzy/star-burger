@@ -101,7 +101,7 @@ class RestaurantMenuItemQuerySet(models.QuerySet):
         return (self
                 .select_related('restaurant', 'product')
                 .filter(availability=True, product_id__in=order_items)
-                .values('restaurant__name', 'product_id')
+                .values('restaurant__name', 'restaurant__address', 'product_id')
                 )
 
 

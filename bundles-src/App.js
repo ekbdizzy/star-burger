@@ -57,7 +57,8 @@ class App extends Component {
       firstname,
       lastname,
       phonenumber,
-      address
+      address,
+      "payment_type": "cash"
     };
 
     let csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;

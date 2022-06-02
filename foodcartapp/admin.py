@@ -139,26 +139,25 @@ class OrderAdmin(admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Filter restaurants where food can be cooked."""
-
-        obj_id = request.resolver_match.kwargs.get('object_id', None)
-        if obj_id is None:
-            return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-        order_qs = (Order.objects
-                    .filter(pk=obj_id)
-                    .prefetch_related('products')
-                    )
-        order_items = OrderItem.objects.get_orders_items(order_qs)
-        menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
-        restaurants = get_restaurants(menu_items)
-
-        order = order_qs.first()
-        order.product_ids = {product.product_id for product in order.products.all()}
-        order.restaurants = filter_restaurants_by_products(restaurants, order.product_ids)
-        restaurant_names = [rest[0] for rest in order.restaurants]
-        restaurants = Restaurant.objects.filter(name__in=restaurant_names).values_list('id')
-
         if db_field.name == "restaurant":
+            obj_id = request.resolver_match.kwargs.get('object_id', None)
+            if obj_id is None:
+                return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+            order_qs = (Order.objects
+                        .filter(pk=obj_id)
+                        .prefetch_related('products')
+                        )
+            order_items = OrderItem.objects.get_orders_items(order_qs)
+            menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
+            restaurants = get_restaurants(menu_items)
+
+            order = order_qs.first()
+            order.product_ids = {product.product_id for product in order.products.all()}
+            order.restaurants = filter_restaurants_by_products(restaurants, order.product_ids)
+            restaurant_names = [restaurant[0] for restaurant in order.restaurants]
+            restaurants = Restaurant.objects.filter(name__in=restaurant_names).values_list('id')
+
             kwargs["queryset"] = Restaurant.objects.filter(id__in=restaurants)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

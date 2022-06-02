@@ -84,6 +84,5 @@ def register_order(request):
 
     serializer = OrderSerializer(order)
     products = order.products.all()
-    products_serializer = OrderItemSerializer(products, many=True)
-    serializer.products = products_serializer
+    serializer.products = OrderItemSerializer(products, many=True)
     return Response(serializer.data, status=status.HTTP_201_CREATED)

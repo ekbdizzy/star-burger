@@ -100,8 +100,9 @@ def view_restaurants(request):
     })
 
 
-def get_restaurants(menu_items: list):
-    """Return list with tuple(name, address) in key and set of product_ids in value."""
+def get_restaurants(menu_items: list) -> defaultdict[tuple, set]:
+    """Get restaurants where all of menu_items can be cooked.
+    :return: tuple(name, address) in a key and set of product_ids in value."""
     restaurants = defaultdict(set)
     for menu_item in menu_items:
         restaurant_name, address, product_id = menu_item.values()
@@ -123,12 +124,12 @@ def filter_restaurants_by_products(
 
 def add_distance_to_order(order_address: str, restaurants: list[tuple]) -> list[tuple]:
     restaurants_with_distance = []
-    for name, address in restaurants:
-        rest_coords = fetch_coordinates(settings.YANDEX_API_KEY, address)
+    for rest_name, rest_address in restaurants:
+        rest_coords = fetch_coordinates(settings.YANDEX_API_KEY, rest_address)
         order_coords = fetch_coordinates(settings.YANDEX_API_KEY, order_address)
         if rest_coords:
             restaurants_with_distance.append(
-                (name, round(distance.distance(rest_coords, order_coords).km, 2)))
+                (rest_name, round(distance.distance(rest_coords, order_coords).km, 2)))
     return sorted(restaurants_with_distance, key=itemgetter(1))
 
 
@@ -136,7 +137,7 @@ def add_distance_to_order(order_address: str, restaurants: list[tuple]) -> list[
 def view_orders(request):
     excluded_statuses = ["5", "6"]
     orders = (Order.objects
-              .prefetch_related('products')
+              .prefetch_related('products', 'restaurant')
               .exclude(status__in=excluded_statuses)
               .get_order_price()
               .order_by('status')

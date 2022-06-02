@@ -1,6 +1,6 @@
 from django.db import models
-from django.core.validators import MinValueValidator
 from django.db.models import Sum, F, OuterRef, Subquery
+from django.core.validators import MinValueValidator
 
 from phonenumber_field.modelfields import PhoneNumberField
 

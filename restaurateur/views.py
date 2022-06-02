@@ -3,7 +3,6 @@ from operator import itemgetter
 
 from django import forms
 from django.conf import settings
-from django.db.models import Subquery, OuterRef
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy

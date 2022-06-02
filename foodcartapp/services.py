@@ -2,7 +2,7 @@ import requests
 
 
 def fetch_coordinates(apikey: str, address: str) -> tuple[int, int] | None:
-    """Fetch coordinates of place by his name."""
+    """Fetch coordinates of address."""
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
         "geocode": address,

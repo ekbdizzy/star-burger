@@ -3,6 +3,7 @@ from operator import itemgetter
 
 from django import forms
 from django.conf import settings
+from django.db.models import Subquery, OuterRef
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -13,6 +14,7 @@ from django.contrib.auth import views as auth_views
 
 from geopy import distance
 
+from address.models import Address
 from foodcartapp.models import Product, Restaurant, Order, OrderItem, RestaurantMenuItem
 from foodcartapp.services import fetch_coordinates
 
@@ -105,8 +107,8 @@ def get_restaurants(menu_items: list) -> defaultdict[tuple, set]:
     :return: tuple(name, address) in a key and set of product_ids in value."""
     restaurants = defaultdict(set)
     for menu_item in menu_items:
-        restaurant_name, address, product_id = menu_item.values()
-        restaurants[(restaurant_name, address)].add(product_id)
+        restaurant_name, address, product_id, lon, lat = menu_item.values()
+        restaurants[(restaurant_name, address, (lon, lat))].add(product_id)
     return restaurants
 
 
@@ -122,11 +124,35 @@ def filter_restaurants_by_products(
     return order_rests
 
 
-def add_distance_to_order(order_address: str, restaurants: list[tuple]) -> list[tuple]:
+def get_or_fetch_coordinates(address: str) -> tuple[float, float] | None:
+    """Try to get coordinates form Address model.
+    If there is no address, try to fetch it from Yandex Geocoder and save to DB.
+    :return: longitude, latitude.
+    If fetch is failed return None."""
+
+    try:
+        obj = Address.objects.get(address=address)
+        return obj.longitude, obj.latitude
+    except Address.DoesNotExist:
+        coords = fetch_coordinates(settings.YANDEX_API_KEY, address)
+        if not coords:
+            return
+        longitude, latitude = coords
+        Address.objects.create(address=address, latitude=latitude, longitude=longitude)
+        return longitude, latitude
+
+
+def add_distance_to_order(order, restaurants: list[tuple]) -> list[tuple]:
+
+    order_coords = (order.coord_lon, order.coord_lat)
+    order_coords = (order_coords
+                    if all(order_coords)
+                    else get_or_fetch_coordinates(order.address))
     restaurants_with_distance = []
-    for rest_name, rest_address in restaurants:
-        rest_coords = fetch_coordinates(settings.YANDEX_API_KEY, rest_address)
-        order_coords = fetch_coordinates(settings.YANDEX_API_KEY, order_address)
+    for rest_name, rest_address, rest_coords in restaurants:
+        rest_coords = (rest_coords
+                       if all(rest_coords)
+                       else get_or_fetch_coordinates(rest_address))
         if rest_coords:
             restaurants_with_distance.append(
                 (rest_name, round(distance.distance(rest_coords, order_coords).km, 2)))
@@ -136,21 +162,24 @@ def add_distance_to_order(order_address: str, restaurants: list[tuple]) -> list[
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     excluded_statuses = ["5", "6"]
+
     orders = (Order.objects
               .prefetch_related('products', 'restaurant')
               .exclude(status__in=excluded_statuses)
               .get_order_price()
+              .get_coordinates()
               .order_by('status')
               )
     order_items = OrderItem.objects.get_orders_items(orders)
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
     restaurants = get_restaurants(menu_items)
+
     for order in orders:
         order.product_ids = {product.product_id for product in order.products.all()}
         order.restaurants = filter_restaurants_by_products(
             restaurants, order.product_ids
         )
-        order.restaurants = add_distance_to_order(order.address, order.restaurants)
+        order.restaurants = add_distance_to_order(order, order.restaurants)
 
     return render(request, template_name='order_items.html', context={
         "orders": orders

@@ -1,8 +1,10 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import Sum, F
+from django.db.models import Sum, F, OuterRef, Subquery
 
 from phonenumber_field.modelfields import PhoneNumberField
+
+from address.models import Address
 
 
 class Restaurant(models.Model):
@@ -98,10 +100,17 @@ class Product(models.Model):
 
 class RestaurantMenuItemQuerySet(models.QuerySet):
     def get_matched_with_order_items(self, order_items: dict):
+        addresses = Address.objects.filter(address=OuterRef('restaurant__address'))
         return (self
                 .select_related('restaurant', 'product')
                 .filter(availability=True, product_id__in=order_items)
-                .values('restaurant__name', 'restaurant__address', 'product_id')
+                .annotate(coord_lon=Subquery(addresses.values('longitude')),
+                          coord_lat=Subquery(addresses.values('latitude')))
+                .values('restaurant__name',
+                        'restaurant__address',
+                        'coord_lon',
+                        'coord_lat',
+                        'product_id',)
                 )
 
 
@@ -142,6 +151,11 @@ class OrderQueryset(models.QuerySet):
         return self.annotate(
             order_price=Sum(F('products__quantity') * F('products__product__price'))
         )
+
+    def get_coordinates(self):
+        addresses = Address.objects.filter(address=OuterRef('address'))
+        return self.annotate(coord_lon=Subquery(addresses.values('longitude')),
+                             coord_lat=Subquery(addresses.values('latitude')))
 
 
 class Order(models.Model):

@@ -146,14 +146,14 @@ class OrderAdmin(admin.ModelAdmin):
 
             order_qs = (Order.objects
                         .filter(pk=obj_id)
-                        .prefetch_related('products')
+                        .prefetch_related('order_items')
                         )
             order_items = OrderItem.objects.get_orders_items(order_qs)
             menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
             restaurants = get_restaurants(menu_items)
 
             order = order_qs.first()
-            order.product_ids = {product.product_id for product in order.products.all()}
+            order.product_ids = {product.product_id for product in order.order_items.all()}
             order.restaurants = filter_restaurants_by_products(restaurants, order.product_ids)
             restaurant_names = [restaurant[0] for restaurant in order.restaurants]
             restaurants = Restaurant.objects.filter(name__in=restaurant_names).values_list('id')

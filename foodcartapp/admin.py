@@ -6,7 +6,8 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from restaurateur.views import get_restaurants
+from restaurateur.views import get_restaurants_with_available_products
+
 from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
@@ -148,7 +149,7 @@ class OrderAdmin(admin.ModelAdmin):
                         )
             order_items = OrderItem.objects.get_orders_items(order_qs)
             menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
-            restaurants = get_restaurants(menu_items)
+            restaurants = get_restaurants_with_available_products(menu_items)
 
             order = order_qs.first()
             order.restaurants = Order.objects.filter_restaurants_by_products(order, restaurants)

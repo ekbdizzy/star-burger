@@ -224,7 +224,7 @@ class Order(models.Model):
         max_length=15,
         choices=STATUS_CHOICES,
         db_index=True,
-        default='Необработан',
+        default='1',
     )
     payment_type = models.CharField(
         'Способ оплаты',

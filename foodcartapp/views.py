@@ -73,7 +73,7 @@ def register_order(request):
     order = Order.objects.create(
         **{key: value for key, value
            in validated_data.items()
-           if key != 'products'}
+           if key != 'products'},
     )
 
     serialized_products = serializer.validated_data['products']

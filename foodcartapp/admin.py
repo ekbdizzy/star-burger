@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseRedirect
@@ -8,7 +6,7 @@ from django.templatetags.static import static
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from restaurateur.views import filter_restaurants_by_products, get_restaurants
+from restaurateur.views import get_restaurants
 from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
@@ -153,8 +151,7 @@ class OrderAdmin(admin.ModelAdmin):
             restaurants = get_restaurants(menu_items)
 
             order = order_qs.first()
-            order.product_ids = {product.product_id for product in order.order_items.all()}
-            order.restaurants = filter_restaurants_by_products(restaurants, order.product_ids)
+            order.restaurants = Order.objects.filter_restaurants_by_products(order, restaurants)
             restaurant_names = [restaurant[0] for restaurant in order.restaurants]
             restaurants = Restaurant.objects.filter(name__in=restaurant_names).values_list('id')
 

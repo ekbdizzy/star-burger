@@ -95,7 +95,7 @@ def view_restaurants(request):
     })
 
 
-def get_restaurants(menu_items: list) -> defaultdict[tuple, set]:
+def get_restaurants_with_available_products(menu_items: list) -> defaultdict[tuple, set]:
     """Get restaurants where all of menu_items can be cooked.
     :return: tuple(name, address) in a key and set of product_ids in value."""
     restaurants = defaultdict(set)
@@ -105,21 +105,20 @@ def get_restaurants(menu_items: list) -> defaultdict[tuple, set]:
     return restaurants
 
 
-
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    excluded_statuses = ["5", "6"]
+    statuses = ["1", "2", "3", "4"]
 
     orders = (Order.objects
               .prefetch_related('order_items', 'restaurant')
-              .exclude(status__in=excluded_statuses)
+              .filter(status__in=statuses)
               .get_order_price()
               .get_coordinates()
               .order_by('status')
               )
     order_items = OrderItem.objects.get_orders_items(orders)
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
-    restaurants = get_restaurants(menu_items)
+    restaurants = get_restaurants_with_available_products(menu_items)
 
     for order in orders:
         order.restaurants = Order.objects.filter_by_product_and_add_distance(order, restaurants)

@@ -149,7 +149,7 @@ class RestaurantMenuItem(models.Model):
 class OrderQueryset(models.QuerySet):
     def get_order_price(self):
         return self.annotate(
-            order_price=Sum(F('products__quantity') * F('products__product__price'))
+            order_price=Sum(F('order_items__quantity') * F('order_items__product__price'))
         )
 
     def get_coordinates(self):
@@ -199,7 +199,7 @@ class Order(models.Model):
         max_length=10,
         db_index=True,
     )
-    comment = models.TextField('Комментарий', max_length=500, blank=True)
+    comment = models.CharField('Комментарий', max_length=500, blank=True)
     registered_at = models.DateTimeField('Когда создан', auto_now_add=True, db_index=True)
     called_at = models.DateTimeField('Когда подтвержден', db_index=True, blank=True, null=True)
     delivered_at = models.DateTimeField('Когда доставлен', db_index=True, blank=True, null=True)
@@ -231,19 +231,19 @@ class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='products',
+        related_name='order_items',
         verbose_name='Заказ', )
     product = models.ForeignKey(
         Product,
         on_delete=models.DO_NOTHING,
-        related_name='items',
+        related_name='order_items',
         verbose_name='Продукты в заказе',
     )
     price = models.DecimalField(
         "Цена",
         max_digits=7,
         decimal_places=2,
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(0)]
     )
     quantity = models.IntegerField('Количество', validators=[MinValueValidator(1)])
 

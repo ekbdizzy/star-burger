@@ -163,7 +163,7 @@ def view_orders(request):
     excluded_statuses = ["5", "6"]
 
     orders = (Order.objects
-              .prefetch_related('products', 'restaurant')
+              .prefetch_related('order_items', 'restaurant')
               .exclude(status__in=excluded_statuses)
               .get_order_price()
               .get_coordinates()
@@ -174,7 +174,7 @@ def view_orders(request):
     restaurants = get_restaurants(menu_items)
 
     for order in orders:
-        order.product_ids = {product.product_id for product in order.products.all()}
+        order.product_ids = {product.product_id for product in order.order_items.all()}
         order.restaurants = filter_restaurants_by_products(
             restaurants, order.product_ids
         )

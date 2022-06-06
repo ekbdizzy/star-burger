@@ -83,6 +83,5 @@ def register_order(request):
     OrderItem.objects.bulk_create(products)
 
     serializer = OrderSerializer(order)
-    products = order.products.all()
-    serializer.products = OrderItemSerializer(products, many=True)
+    serializer.order_items = OrderItemSerializer(products, many=True)
     return Response(serializer.data, status=status.HTTP_201_CREATED)

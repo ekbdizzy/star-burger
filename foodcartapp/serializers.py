@@ -20,8 +20,10 @@ class OrderSerializer(serializers.ModelSerializer):
             'address',
             'payment_type',
             'products',
+            'order_items',
             'comment'
         ]
 
-    products = OrderItemSerializer(many=True)
+    order_items = OrderItemSerializer(many=True, read_only=True)
+    products = OrderItemSerializer(many=True, write_only=True)
     comment = serializers.CharField(read_only=True)

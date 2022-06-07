@@ -57,6 +57,10 @@ pip install -r requirements.txt
 ```sh
 YANDEX_API_KEY=apikey_from_yandex
 ```
+Добавьте в `.env` ключ SECRET_KEY. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте. Не стоит использовать значение по-умолчанию. Подробней в [документации](https://docs.djangoproject.com/en/4.0/ref/settings/#std-setting-SECRET_KEY).
+```sh
+SECRET_KEY=generated_secret__key
+```
 
 Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
 

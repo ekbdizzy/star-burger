@@ -145,9 +145,9 @@ class OrderAdmin(admin.ModelAdmin):
 
             order_qs = (Order.objects
                         .filter(pk=obj_id)
-                        .prefetch_related('order_items')
+                        .prefetch_related('items')
                         )
-            order_items = OrderItem.objects.get_orders_items(order_qs)
+            order_items = order_qs.get_orders_items()
             menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
             restaurants = get_restaurants_with_available_products(menu_items)
 

@@ -110,18 +110,18 @@ def view_orders(request):
     statuses = ["1", "2", "3", "4"]
 
     orders = (Order.objects
-              .prefetch_related('order_items', 'restaurant')
+              .prefetch_related('items', 'restaurant')
               .filter(status__in=statuses)
               .get_order_price()
               .get_coordinates()
               .order_by('status')
               )
-    order_items = OrderItem.objects.get_orders_items(orders)
+    order_items = orders.get_orders_items()
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
     restaurants = get_restaurants_with_available_products(menu_items)
 
     for order in orders:
-        order.restaurants = Order.objects.filter_by_product_and_add_distance(order, restaurants)
+        order.restaurants = orders.filter_by_product_and_add_distance(order, restaurants)
 
     return render(request, template_name='order_items.html', context={
         "orders": orders

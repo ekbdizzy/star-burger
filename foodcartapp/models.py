@@ -153,7 +153,7 @@ class RestaurantMenuItem(models.Model):
 class OrderQueryset(models.QuerySet):
     def get_order_price(self):
         return self.annotate(
-            order_price=Sum(F('order_items__quantity') * F('order_items__product__price'))
+            order_price=Sum(F('items__quantity') * F('items__product__price'))
         )
 
     def get_coordinates(self):
@@ -161,9 +161,12 @@ class OrderQueryset(models.QuerySet):
         return self.annotate(coord_lon=Subquery(addresses.values('longitude')),
                              coord_lat=Subquery(addresses.values('latitude')))
 
+    def get_orders_items(self):
+        return self.values_list('items__product_id').distinct()
+
     def filter_restaurants_by_products(self, order, restaurants):
         """Return list of restaurants where products can be cooked."""
-        product_ids = {product.product_id for product in order.order_items.all()}
+        product_ids = {product.product_id for product in order.items.all()}
         order_rests = []
         for restaurant, rest_products in restaurants.items():
             if product_ids.issubset(rest_products):
@@ -232,7 +235,7 @@ class Order(models.Model):
         max_length=10,
         db_index=True,
     )
-    comment = models.CharField('Комментарий', max_length=500, blank=True)
+    comment = models.TextField('Комментарий', max_length=500, blank=True)
     registered_at = models.DateTimeField('Когда создан', auto_now_add=True, db_index=True)
     called_at = models.DateTimeField('Когда подтвержден', db_index=True, blank=True, null=True)
     delivered_at = models.DateTimeField('Когда доставлен', db_index=True, blank=True, null=True)
@@ -240,6 +243,7 @@ class Order(models.Model):
                                    on_delete=models.SET_NULL,
                                    null=True,
                                    blank=True,
+                                   related_name='orders',
                                    verbose_name='Какой ресторан готовит'
                                    )
 
@@ -253,18 +257,12 @@ class Order(models.Model):
         return f'{self.firstname} {self.lastname} {self.address}'
 
 
-class OrderItemQuerySet(models.QuerySet):
-
-    def get_orders_items(self, orders: OrderQueryset):
-        return self.filter(order__in=orders).distinct().values_list('product_id')
-
-
 class OrderItem(models.Model):
     """Модель продукта в заказе."""
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='order_items',
+        related_name='items',
         verbose_name='Заказ', )
     product = models.ForeignKey(
         Product,
@@ -279,8 +277,6 @@ class OrderItem(models.Model):
         validators=[MinValueValidator(0)]
     )
     quantity = models.IntegerField('Количество', validators=[MinValueValidator(1)])
-
-    objects = OrderItemQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Продукт в заказе'

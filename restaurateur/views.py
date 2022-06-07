@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 from foodcartapp.models import Product, Restaurant, Order, OrderItem, RestaurantMenuItem
+from foodcartapp.order_tools import filter_by_product_and_add_distance
 
 
 class Login(forms.Form):
@@ -121,7 +122,7 @@ def view_orders(request):
     restaurants = get_restaurants_with_available_products(menu_items)
 
     for order in orders:
-        order.restaurants = orders.filter_by_product_and_add_distance(order, restaurants)
+        order.restaurants = filter_by_product_and_add_distance(order, restaurants)
 
     return render(request, template_name='order_items.html', context={
         "orders": orders

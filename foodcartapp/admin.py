@@ -12,6 +12,7 @@ from .models import Product, Order, OrderItem
 from .models import ProductCategory
 from .models import Restaurant
 from .models import RestaurantMenuItem
+from .order_tools import filter_restaurants_by_products
 
 
 class RestaurantMenuItemInline(admin.TabularInline):
@@ -152,7 +153,7 @@ class OrderAdmin(admin.ModelAdmin):
             restaurants = get_restaurants_with_available_products(menu_items)
 
             order = order_qs.first()
-            order.restaurants = Order.objects.filter_restaurants_by_products(order, restaurants)
+            order.restaurants = filter_restaurants_by_products(order, restaurants)
             restaurant_names = [restaurant[0] for restaurant in order.restaurants]
             restaurants = Restaurant.objects.filter(name__in=restaurant_names).values_list('id')
 

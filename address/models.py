@@ -7,7 +7,7 @@ from address.services import fetch_coordinates
 class AddressQuerySet(models.QuerySet):
 
     def get_or_create_addresses_with_coord(self, order_and_rest_addresses: set) -> dict[str]:
-        """Return existing and fetched addresses from DB and return addresses with coordinates.
+        """Return existing and fetched addresses from DB with coordinates.
         If address is absent in DB, it's requested in Yandex.Geocoder and save to DB."""
         existing_addresses = (self.filter(address__in=order_and_rest_addresses)
                               .values_list('address', 'longitude', 'latitude'))

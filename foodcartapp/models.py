@@ -1,14 +1,10 @@
-from operator import itemgetter
-
 from django.db import models
 from django.db.models import Sum, F, OuterRef, Subquery
 from django.core.validators import MinValueValidator
-from geopy import distance
 
 from phonenumber_field.modelfields import PhoneNumberField
 
 from address.models import Address
-from address.services import get_or_fetch_coordinates
 
 
 class Restaurant(models.Model):

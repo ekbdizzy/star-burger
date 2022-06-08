@@ -9,7 +9,8 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-from foodcartapp.models import Product, Restaurant, Order, OrderItem, RestaurantMenuItem
+from address.models import Address
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 from foodcartapp.order_tools import filter_by_product_and_add_distance
 
 
@@ -121,8 +122,14 @@ def view_orders(request):
     menu_items = RestaurantMenuItem.objects.get_matched_with_order_items(order_items)
     restaurants = get_restaurants_with_available_products(menu_items)
 
+    order_and_rest_addresses = {
+        *[order.address for order in orders],
+        *[address for _, address, _ in restaurants]
+    }
+    addresses = Address.objects.get_or_create_addresses_with_coord(order_and_rest_addresses)
+
     for order in orders:
-        order.restaurants = filter_by_product_and_add_distance(order, restaurants)
+        order.restaurants = filter_by_product_and_add_distance(order, restaurants, addresses)
 
     return render(request, template_name='order_items.html', context={
         "orders": orders

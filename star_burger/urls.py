@@ -16,12 +16,20 @@ Including another URLconf
 """
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include
 from django.shortcuts import render
+from django.conf import settings
 
-from . import settings
+
+def debug_rollbar(request):
+    a = None
+    a.hello()  # Creating an error with an invalid line of code
+    return HttpResponse("Hello, world. You're at the pollapp index.")
+
 
 urlpatterns = [
+    path('rollbar/', debug_rollbar),
     path('admin/', admin.site.urls),
     path('', render, kwargs={'template_name': 'index.html'}, name='start_page'),
     path('api-auth/', include('rest_framework.urls')),

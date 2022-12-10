@@ -154,6 +154,15 @@ Parcel будет следить за файлами в каталоге `bundle
 - `ENVIRONMENT` - показывает статус проекта. Для prod-версии используйте значение `production`, значение по умолчанию: `development`.
 - `ROLLBAR_TOKEN` - токен [Rollbar](https://rollbar.com/) для логирование ошибок.
 - `DB_URL` - настройки базы данных в формате postgres://USER:PASSWORD@HOST:PORT/NAME. Настройки для других баз данных [здесь](https://github.com/jazzband/dj-database-url#url-schema).
+
+## Обновить код на сервере
+В папке `/root` запустите код:
+```shell
+sh deploy_star_burger.sh
+```
+
+
+
 ## Цели проекта
 
 Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org). За основу был взят код проекта [FoodCart](https://github.com/Saibharath79/FoodCart).
